@@ -1,0 +1,81 @@
+# Trackify unified Docker Compose orchestration
+# Default: only postgres starts (host-mode dev for api + web with HMR)
+# Full stack: docker compose --profile full up
+
+name: trackify
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: trackify-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-trackify}
+      POSTGRES_USER: ${POSTGRES_USER:-trackify}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trackify}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - trackify-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-trackify} -d ${POSTGRES_DB:-trackify}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - trackify-net
+
+  api:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: trackify-api
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-trackify}:${POSTGRES_PASSWORD:-trackify}@postgres:5432/${POSTGRES_DB:-trackify}
+    ports:
+      - "${API_PORT:-3010}:${API_PORT:-3010}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./apps/api:/workspace/apps/api
+      - ./packages:/workspace/packages
+      - /workspace/apps/api/node_modules
+    networks:
+      - trackify-net
+
+  web:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: trackify-web
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    environment:
+      VITE_API_BASE_URL: http://localhost:${API_PORT:-3010}
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "${WEB_PORT:-5173}:5173"
+    depends_on:
+      - api
+    volumes:
+      - ./apps/web:/workspace/apps/web
+      - ./apps/web-overrides:/workspace/apps/web-overrides
+      - ./packages:/workspace/packages
+      - /workspace/apps/web/node_modules
+    networks:
+      - trackify-net
+
+volumes:
+  trackify-postgres-data:
+
+networks:
+  trackify-net:
+    driver: bridge

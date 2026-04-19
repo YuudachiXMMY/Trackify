@@ -1,0 +1,49 @@
+{
+  "name": "trackify",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm docker:postgres && concurrently -n api,web -c cyan,magenta \"pnpm dev:api\" \"pnpm dev:web\"",
+    "dev:web": "pnpm --filter './apps/web' exec vite --port 5173 --strictPort",
+    "dev:api": "pnpm --filter './apps/api' dev",
+    "build": "pnpm -r build",
+    "docker:postgres": "docker compose --env-file .env.local up -d postgres",
+    "docker:up": "docker compose --env-file .env.local up -d",
+    "docker:down": "docker compose --env-file .env.local down",
+    "docker:full": "docker compose --env-file .env.local --profile full up",
+    "docker:test": "bash scripts/docker-fullstack.sh",
+    "db:generate": "pnpm --filter './packages/db' exec prisma generate",
+    "db:migrate": "pnpm --filter './packages/db' exec prisma migrate dev",
+    "db:studio": "pnpm --filter './packages/db' exec prisma studio",
+    "db:seed": "pnpm --filter './packages/db' exec tsx seed.ts",
+    "figma:check-forks": "tsx scripts/figma-check-forks.ts",
+    "figma:sync": "bash scripts/sync-figma-make.sh",
+    "figma:sync:github": "bash scripts/sync-figma-make.sh --github",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "concurrently": "^9.0.0",
+    "js-yaml": "^4.1.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "vite": "6.3.5"
+    },
+    "onlyBuiltDependencies": [
+      "@tailwindcss/oxide",
+      "esbuild",
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma"
+    ]
+  },
+  "packageManager": "pnpm@10.28.0"
+}

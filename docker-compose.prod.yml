@@ -1,0 +1,147 @@
+# ── Trackify — Production Compose ──────────────
+# Usage: docker compose -f docker-compose.prod.yml up -d
+# Requires: external 'proxy' network (created by Traefik)
+
+services:
+  # ── Frontend (Vite → Nginx) ──────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      target: prod
+      args:
+        VITE_API_BASE_URL: https://${API_DOMAIN}
+    container_name: trackify-frontend
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /var/run
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.trackify-fe.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.trackify-fe.entrypoints=websecure"
+      - "traefik.http.routers.trackify-fe.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.trackify-fe.middlewares=secure-headers@file,compress@file"
+      - "traefik.http.services.trackify-fe.loadbalancer.server.port=80"
+    networks:
+      - proxy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+
+  # ── API (Hono + Node.js) ─────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: prod
+    container_name: trackify-api
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      - NODE_ENV=production
+      - API_PORT=3010
+      - API_HOST=0.0.0.0
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - CORS_ORIGIN=https://${DOMAIN}
+      - JWT_SECRET=${JWT_SECRET}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.trackify-api.rule=Host(`${API_DOMAIN}`)"
+      - "traefik.http.routers.trackify-api.entrypoints=websecure"
+      - "traefik.http.routers.trackify-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.trackify-api.middlewares=secure-headers@file,compress@file,rate-limit@file"
+      - "traefik.http.services.trackify-api.loadbalancer.server.port=3010"
+    networks:
+      - proxy
+      - internal
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3010/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+
+  # ── PostgreSQL 16 ────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: trackify-db
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    shm_size: 256m
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+
+  # ── PostgreSQL Auto-Backup (daily) ───────────
+  db-backup:
+    image: prodrigestivill/postgres-backup-local:16
+    container_name: trackify-db-backup
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SCHEDULE: "@daily"
+      BACKUP_NUM_KEEP: 7
+      BACKUP_DIR: /backups
+      HEALTHCHECK_PORT: 8080
+    volumes:
+      - ./data/backups/postgres:/backups
+    networks:
+      - internal
+    depends_on:
+      db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: "0.25"
+
+networks:
+  proxy:
+    external: true
+  internal:
+    driver: bridge

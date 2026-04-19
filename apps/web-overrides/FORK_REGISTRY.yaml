@@ -1,0 +1,13 @@
+version: 1
+
+# Each entry tracks a Figma Make file that we have diverged from.
+# - `path`: the file as Figma Make ships it (inside apps/web/)
+# - `override`: where our version lives (if path == override, it's a "self-fork" — we edit in place)
+# - `upstream.hash`: sha256 of the last-known upstream version, used to detect drift on sync
+# - `upstream.snapshot`: frozen copy of the upstream file for diffing
+#
+# On `pnpm figma:sync`, the check-forks script compares each `path` against
+# `upstream.hash`. If it differs, Figma Make shipped a new upstream version
+# and you must manually port the changes into `override`.
+
+forks: []

@@ -1,0 +1,175 @@
+// Trackify database schema
+// Provider: PostgreSQL 16
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =================================================================
+// User
+// =================================================================
+
+model User {
+  id            String      @id @default(cuid())
+  email         String      @unique
+  passwordHash  String      @map("password_hash")
+  name          String
+  nickname      String?     @unique
+  avatar        String?
+  bio           String?
+  timezone      String      @default("America/New_York")
+
+  habits        Habit[]
+  habitLogs     HabitLog[]
+  workouts      Workout[]
+  timeEntries   TimeEntry[]
+  categories    Category[]
+
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+// =================================================================
+// Habit Tracking
+// =================================================================
+
+model Habit {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  name        String
+  description String?
+  icon        String?
+  color       String    @default("#6366f1")
+  frequency   Frequency @default(DAILY)
+  targetCount Int       @default(1) @map("target_count")
+  isArchived  Boolean   @default(false) @map("is_archived")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs        HabitLog[]
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId])
+  @@map("habits")
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  habitId   String   @map("habit_id")
+  userId    String   @map("user_id")
+  date      DateTime @db.Date
+  count     Int      @default(1)
+  note      String?
+
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([habitId, date])
+  @@index([userId, date])
+  @@map("habit_logs")
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+// =================================================================
+// Fitness / Workout
+// =================================================================
+
+model Workout {
+  id          String      @id @default(cuid())
+  userId      String      @map("user_id")
+  name        String
+  type        WorkoutType @default(STRENGTH)
+  duration    Int?
+  calories    Int?
+  note        String?
+  date        DateTime    @db.Date
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises   Exercise[]
+
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@index([userId, date])
+  @@map("workouts")
+}
+
+model Exercise {
+  id        String   @id @default(cuid())
+  workoutId String   @map("workout_id")
+  name      String
+  sets      Int?
+  reps      Int?
+  weight    Float?
+  duration  Int?
+  distance  Float?
+  sortOrder Int      @default(0) @map("sort_order")
+
+  workout   Workout  @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+
+  @@index([workoutId])
+  @@map("exercises")
+}
+
+enum WorkoutType {
+  STRENGTH
+  CARDIO
+  FLEXIBILITY
+  HIIT
+  YOGA
+  OTHER
+}
+
+// =================================================================
+// Time Management
+// =================================================================
+
+model Category {
+  id        String      @id @default(cuid())
+  userId    String      @map("user_id")
+  name      String
+  color     String      @default("#6366f1")
+  icon      String?
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timeEntries TimeEntry[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, name])
+  @@map("categories")
+}
+
+model TimeEntry {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  categoryId  String?   @map("category_id")
+  description String?
+  startTime   DateTime  @map("start_time")
+  endTime     DateTime? @map("end_time")
+  duration    Int?
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId, startTime])
+  @@map("time_entries")
+}

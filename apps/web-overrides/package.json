@@ -1,0 +1,31 @@
+{
+  "name": "@trackify/web-overrides",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./plugin": "./vite-plugin-overrides.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@trackify/shared": "workspace:*",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "typescript": "^5.6.0"
+  },
+  "peerDependencies": {
+    "lucide-react": "*",
+    "motion": ">=12",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router": "*",
+    "vite": "^6.3.5"
+  }
+}
