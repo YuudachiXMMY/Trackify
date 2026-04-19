@@ -105,6 +105,11 @@ wait_postgres() {
 
 # ── Run Prisma migrate + seed ──────────────────
 run_migrate_seed() {
+  # Export env vars so Prisma CLI can read DATABASE_URL
+  set -a
+  source "$ENV_FILE"
+  set +a
+
   info "running Prisma generate..."
   (cd "$ROOT_DIR" && pnpm db:generate) || {
     err "prisma generate failed"
