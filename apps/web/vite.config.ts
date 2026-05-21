@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+import { figmaMakeOverrides } from '../../apps/web-overrides/vite-plugin-overrides'
 
 
 function figmaAssetResolver() {
@@ -18,6 +19,7 @@ function figmaAssetResolver() {
 
 export default defineConfig({
   plugins: [
+    figmaMakeOverrides(path.resolve(__dirname, '../..')),
     figmaAssetResolver(),
     // The React and Tailwind plugins are both required for Make, even if
     // Tailwind is not being actively used – do not remove them
@@ -28,6 +30,7 @@ export default defineConfig({
     alias: {
       // Alias @ to the src directory
       '@': path.resolve(__dirname, './src'),
+      '@trackify/shared': path.resolve(__dirname, '../../packages/shared/src'),
     },
   },
 

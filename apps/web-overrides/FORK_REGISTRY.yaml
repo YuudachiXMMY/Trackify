@@ -10,4 +10,93 @@ version: 1
 # `upstream.hash`. If it differs, Figma Make shipped a new upstream version
 # and you must manually port the changes into `override`.
 
-forks: []
+forks:
+  - path: apps/web/src/app/components/AuthContext.tsx
+    override: apps/web-overrides/src/components/AuthContext.tsx
+    reason: >
+      Replaced Figma Make's stub context with a real JWT auth flow:
+      register, login, logout, and /api/auth/me token refresh.
+    upstream:
+      hash: 9009801bd6b3f35c16ce58c760f7ccd7a086955bd5a1cf6b94555444e0627b09
+      snapshot: apps/web-overrides/.snapshots/AuthContext.tsx
+
+  - path: apps/web/src/app/components/Root.tsx
+    override: apps/web-overrides/src/components/Root.tsx
+    reason: >
+      Wraps the entire app with AuthProvider and adds authenticated route
+      guards so unauthenticated users are redirected to LoginScreen.
+    upstream:
+      hash: 91618e698d3e28014b7a19ebe4ade049409a7ce09d15f310f3a7592b33de6aef
+      snapshot: apps/web-overrides/.snapshots/Root.tsx
+
+  - path: apps/web/src/app/components/LoginScreen.tsx
+    override: apps/web-overrides/src/components/LoginScreen.tsx
+    reason: >
+      Wired login form to POST /api/auth/login and stores the returned JWT
+      via AuthContext; handles validation errors and loading state.
+    upstream:
+      hash: 542d915e93cd56cd6030ec34b4c9b687a578ac36ad23d6c6f2515af55dd005ad
+      snapshot: apps/web-overrides/.snapshots/LoginScreen.tsx
+
+  - path: apps/web/src/app/components/SignupScreen.tsx
+    override: apps/web-overrides/src/components/SignupScreen.tsx
+    reason: >
+      Wired signup form to POST /api/auth/register; validates fields with
+      Zod before submission and surfaces API error messages inline.
+    upstream:
+      hash: 2972a5c18a530e85897005529796dbabe8b9353fed194670cd619134f450b1d1
+      snapshot: apps/web-overrides/.snapshots/SignupScreen.tsx
+
+  - path: apps/web/src/app/components/OnboardingScreen.tsx
+    override: apps/web-overrides/src/components/OnboardingScreen.tsx
+    reason: >
+      Added onboarding step persistence so completed users skip straight to
+      HomeScreen on next launch; uses AuthContext user state.
+    upstream:
+      hash: 2e92b7f5f0535282c7c30c6eebb1f798bfa825f908c797dedf97203539b69dea
+      snapshot: apps/web-overrides/.snapshots/OnboardingScreen.tsx
+
+  - path: apps/web/src/app/components/HomeScreen.tsx
+    override: apps/web-overrides/src/components/HomeScreen.tsx
+    reason: >
+      Fetches live habit and time-entry data from the API; replaces static
+      Figma Make mock data with real authenticated requests.
+    upstream:
+      hash: 15dced0e4be0e43928c7de76ca7afd023dc36c0fefbd803c463d5c00515e9c25
+      snapshot: apps/web-overrides/.snapshots/HomeScreen.tsx
+
+  - path: apps/web/src/app/components/ScanScreen.tsx
+    override: apps/web-overrides/src/components/ScanScreen.tsx
+    reason: >
+      Integrated MiniMax Vision API for food barcode / photo scanning;
+      replaces the static placeholder with a live camera + AI pipeline.
+    upstream:
+      hash: 7ce5bfb5c4a621bd2d33d5532ec34ab853294d36765e8c3c6b51bc9558a72bcf
+      snapshot: apps/web-overrides/.snapshots/ScanScreen.tsx
+
+  - path: apps/web/src/app/components/AIChatScreen.tsx
+    override: apps/web-overrides/src/components/AIChatScreen.tsx
+    reason: >
+      Integrated MiniMax Chat API (api.minimaxi.com) for streaming AI
+      responses; replaced the static chat UI with a live message thread.
+    upstream:
+      hash: a4b68d38ef969f2051d8d4b1eec93fd9e7807ac00457bad9788cb57cf1ac9dc0
+      snapshot: apps/web-overrides/.snapshots/AIChatScreen.tsx
+
+  - path: apps/web/src/app/components/ProgressScreen.tsx
+    override: apps/web-overrides/src/components/ProgressScreen.tsx
+    reason: >
+      Fetches habit logs and workout history from the API to render real
+      progress charts instead of Figma Make's hard-coded sample data.
+    upstream:
+      hash: 9785ae95156463185deb54d8f0b3bcbab28bbbccc57ddf82792af5ea79ea9c02
+      snapshot: apps/web-overrides/.snapshots/ProgressScreen.tsx
+
+  - path: apps/web/src/app/components/ProfileScreen.tsx
+    override: apps/web-overrides/src/components/ProfileScreen.tsx
+    reason: >
+      Pulls the authenticated user's profile from /api/auth/me and
+      provides a logout action that clears the JWT via AuthContext.
+    upstream:
+      hash: 06f80cbaf5ca24376a7cc0b2893b8c71efa93e4124465b2baebf5ed9cf6f547e
+      snapshot: apps/web-overrides/.snapshots/ProfileScreen.tsx

@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
+import bcrypt from 'bcrypt'
 import { prisma } from '@trackify/db'
 import { LoginSchema, UserCreateSchema } from '@trackify/shared'
 import type { ApiResult, AuthResponse } from '@trackify/shared'
@@ -22,7 +23,7 @@ auth.post('/register', zValidator('json', UserCreateSchema), async (c) => {
   const user = await prisma.user.create({
     data: {
       email: body.email,
-      passwordHash: body.password, // TODO: hash with bcrypt in production
+      passwordHash: await bcrypt.hash(body.password, 12),
       name: body.name,
       nickname: body.nickname,
       timezone: body.timezone ?? 'America/New_York',
@@ -55,7 +56,7 @@ auth.post('/login', zValidator('json', LoginSchema), async (c) => {
   const { email, password } = c.req.valid('json')
 
   const user = await prisma.user.findUnique({ where: { email } })
-  if (!user || user.passwordHash !== password) { // TODO: bcrypt.compare in production
+  if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
     return c.json<ApiResult<never>>(
       { ok: false, error: { error: 'Invalid credentials', code: 'UNAUTHORIZED' } },
       401

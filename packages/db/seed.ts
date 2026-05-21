@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcrypt'
 
 const prisma = new PrismaClient()
 
@@ -11,10 +12,12 @@ async function main() {
     return
   }
 
+  const hashedPassword = await bcrypt.hash('demo123', 12)
+
   const user = await prisma.user.create({
     data: {
       email,
-      passwordHash: 'demo123',
+      passwordHash: hashedPassword,
       name: 'Demo User',
       nickname: 'demo',
       timezone: 'America/New_York',
@@ -37,6 +40,20 @@ async function main() {
   })
 
   console.log(`seed: created user (${user.id})`)
+
+  await prisma.userGoal.create({
+    data: {
+      userId: user.id,
+      goalType: 'BALANCED',
+      calorieTarget: 1800,
+      proteinTarget: 120,
+      carbsTarget: 225,
+      fatTarget: 60,
+      waterTarget: 8,
+    },
+  })
+
+  console.log(`seed: created default UserGoal for user (${user.id})`)
 }
 
 main()
