@@ -16,7 +16,7 @@ app.use('*', logger())
 app.use(
   '*',
   cors({
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
+    origin: process.env.CORS_ORIGIN ?? 'http://localhost:3500',
     credentials: true,
   })
 )
@@ -33,7 +33,7 @@ app.onError((err, c) => {
   return c.json({ error: err.message, code: 'INTERNAL' }, 500)
 })
 
-const port = Number(process.env.API_PORT ?? 3010)
+const port = Number(process.env.API_PORT ?? 3501)
 const hostname = process.env.API_HOST ?? '0.0.0.0'
 
 serve({ fetch: app.fetch, port, hostname }, (info) => {

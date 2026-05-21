@@ -1,6 +1,7 @@
 # Trackify unified Docker Compose orchestration
 # Default: only postgres starts (host-mode dev for api + web with HMR)
 # Full stack: docker compose --profile full up
+# Ports: Web 3500 | API 3501 | DB 3502
 
 name: trackify
 
@@ -14,7 +15,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-trackify}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trackify}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-3502}:5432"
     volumes:
       - trackify-postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -38,7 +39,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-trackify}:${POSTGRES_PASSWORD:-trackify}@postgres:5432/${POSTGRES_DB:-trackify}
     ports:
-      - "${API_PORT:-3010}:${API_PORT:-3010}"
+      - "${API_PORT:-3501}:${API_PORT:-3501}"
     depends_on:
       postgres:
         condition: service_healthy
@@ -46,7 +47,12 @@ services:
       - ./apps/api:/workspace/apps/api
       - ./packages:/workspace/packages
       - /workspace/apps/api/node_modules
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.trackify-api.rule=Host(`${API_DOMAIN:-api.trackify.localhost}`)"
+      - "traefik.http.services.trackify-api.loadbalancer.server.port=${API_PORT:-3501}"
     networks:
+      - proxy
       - trackify-net
 
   web:
@@ -59,10 +65,10 @@ services:
     env_file:
       - .env.local
     environment:
-      VITE_API_BASE_URL: http://localhost:${API_PORT:-3010}
+      VITE_API_BASE_URL: http://localhost:${API_PORT:-3501}
       CHOKIDAR_USEPOLLING: "true"
     ports:
-      - "${WEB_PORT:-5173}:5173"
+      - "${WEB_PORT:-3500}:80"
     depends_on:
       - api
     volumes:
@@ -70,12 +76,19 @@ services:
       - ./apps/web-overrides:/workspace/apps/web-overrides
       - ./packages:/workspace/packages
       - /workspace/apps/web/node_modules
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.trackify-web.rule=Host(`${WEB_DOMAIN:-trackify.localhost}`)"
+      - "traefik.http.services.trackify-web.loadbalancer.server.port=80"
     networks:
+      - proxy
       - trackify-net
 
 volumes:
   trackify-postgres-data:
 
 networks:
+  proxy:
+    external: true
   trackify-net:
     driver: bridge

@@ -28,7 +28,7 @@ Every route follows this pattern:
 | Var | Default | Purpose |
 |-----|---------|---------|
 | `DATABASE_URL` | (required) | Prisma PostgreSQL connection |
-| `API_PORT` | `3010` | Server port |
+| `API_PORT` | `3501` | Server port |
 | `API_HOST` | `0.0.0.0` | Server bind address |
-| `CORS_ORIGIN` | `http://localhost:5173` | Allowed CORS origin |
+| `CORS_ORIGIN` | `http://localhost:3500` | Allowed CORS origin |
 | `JWT_SECRET` | `dev-secret-change-me` | JWT signing secret |

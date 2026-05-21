@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm docker:postgres && concurrently -n api,web -c cyan,magenta \"pnpm dev:api\" \"pnpm dev:web\"",
-    "dev:web": "pnpm --filter './apps/web' exec vite --port 5173 --strictPort",
+    "dev:web": "pnpm --filter './apps/web' exec vite --port 3500 --strictPort",
     "dev:api": "pnpm --filter './apps/api' dev",
     "build": "pnpm -r build",
     "docker:postgres": "docker compose --env-file .env.local up -d postgres",

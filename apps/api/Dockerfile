@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile:1.7
 FROM node:22-alpine AS base
+RUN apk add --no-cache openssl
 RUN corepack enable && corepack prepare pnpm@10.28.0 --activate
 WORKDIR /workspace
 
@@ -13,7 +14,7 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS dev
 COPY . .
 RUN pnpm --filter './packages/db' exec prisma generate
-EXPOSE 3010
+EXPOSE 3501
 CMD ["pnpm", "--filter", "./apps/api", "dev"]
 
 # ── Production target ──────────────────────────
@@ -21,6 +22,6 @@ CMD ["pnpm", "--filter", "./apps/api", "dev"]
 FROM deps AS prod
 COPY . .
 RUN pnpm --filter './packages/db' exec prisma generate
-EXPOSE 3010
+EXPOSE 3501
 ENV NODE_ENV=production
 CMD ["npx", "tsx", "apps/api/src/server.ts"]

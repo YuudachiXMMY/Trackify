@@ -52,7 +52,7 @@ services:
       - no-new-privileges:true
     environment:
       - NODE_ENV=production
-      - API_PORT=3010
+      - API_PORT=3501
       - API_HOST=0.0.0.0
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       - CORS_ORIGIN=https://${DOMAIN}
@@ -63,7 +63,7 @@ services:
       - "traefik.http.routers.trackify-api.entrypoints=websecure"
       - "traefik.http.routers.trackify-api.tls.certresolver=letsencrypt"
       - "traefik.http.routers.trackify-api.middlewares=secure-headers@file,compress@file,rate-limit@file"
-      - "traefik.http.services.trackify-api.loadbalancer.server.port=3010"
+      - "traefik.http.services.trackify-api.loadbalancer.server.port=3501"
     networks:
       - proxy
       - internal
@@ -71,7 +71,7 @@ services:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3010/health"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3501/health"]
       interval: 30s
       timeout: 5s
       retries: 3
